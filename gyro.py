@@ -56,6 +56,7 @@
 #*********************************************************************/
 
 import math
+import numpy as np
 
 #####################################################################
 
@@ -100,3 +101,24 @@ def gyro_to_angles(orientation_x, orientation_y, orientation_z, orientation_w):
     return roll, pitch, heading;
 
 #####################################################################
+
+#http://planning.cs.uiuc.edu/node102.html
+
+def angles_to_R(roll, pitch, heading):
+    roll_r = math.radians(roll)
+    pitch_r = math.radians(pitch)
+    heading_r = math.radians(heading)
+
+    s_a = math.sin(heading_r)
+    c_a = math.cos(heading_r)
+
+    s_b = math.sin(roll_r)
+    c_b = math.cos(roll_r)
+
+    s_c = math.sin(pitch_r)
+    c_c = math.cos(pitch_r)
+
+    R = np.array([  [c_a * c_b, (c_a * s_b * s_c) - (s_a * c_c), (c_a * s_b * c_c) + (s_a * s_c)],
+                    [s_a * c_b, (s_a * s_b * s_c) + (c_a * c_c), (s_a * s_b * c_c) - (c_a * s_c)],
+                    [-s_b, c_b * s_c, c_b * c_c]])
+    return R
