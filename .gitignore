@@ -102,3 +102,6 @@ ENV/
 
 # Ignore data set folders
 /TTBB-durham-02-10-17-sub5*
+
+*.png
+*.xcf
