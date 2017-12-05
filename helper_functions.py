@@ -11,6 +11,8 @@ import numpy as np
 import cv2
 import math
 
+from gyro import *
+
 # Takes an image and a Hessian threshold value and
 # returns the SURF features points (kp) and descriptors (des) of image
 # (for SURF features - Hessian threshold of typically 400-1000 can be used)
@@ -62,33 +64,14 @@ def haversine_dist(lat1, long1, lat2, long2):
 def convert_gps_to_coords(gps_data):
     lon, lat = gps_data[1], gps_data[2]
 
-    #54.767, -1.57002 - > 82, 410
-
     return 5, 5
 
-#####################################################################
+def IMU_matrices(prev_imu, cur_imu):
+    time_passed = cur_imu[0] - prev_imu[0]
+    roll, pitch, heading = gyro_to_angles(cur_imu[1], cur_imu[2], cur_imu[3], cur_imu[4])
+    R = angles_to_R(roll, pitch, heading)
 
-# Code taken from the provided gyro.py file, which credited
-# lines 386 - 404 of yocto_gyro.py example
-# provided with YoctoLib.python 28878 (November 2017)
-# We are only interested in the heading
+    t = np.array([cur_imu[5] - prev_imu[5], cur_imu[6] - prev_imu[6], cur_imu[7] - prev_imu[7]])
+    t = t.reshape((3, 1))
 
-def gyro_to_heading(orientation_x, orientation_y, orientation_z, orientation_w):
-    sqw = orientation_w * orientation_w;
-    sqx = orientation_x * orientation_x;
-    sqy = orientation_y * orientation_y;
-    sqz = orientation_z * orientation_z;
-    norm = sqx + sqy + sqz + sqw;
-    delta = orientation_y * orientation_w - orientation_x * orientation_z;
-
-    if delta > 0.499 * norm:
-            heading  = round(2.0 * 1800.0/math.pi * math.atan2(orientation_x,-orientation_w)) / 10.0;
-    else:
-            if delta < -0.499 * norm:
-                heading  = round(-2.0 * 1800.0/math.pi * math.atan2(orientation_x,-orientation_w)) / 10.0;
-            else:
-                heading  = round(1800.0/math.pi * math.atan2(2.0 * (orientation_x * orientation_y + orientation_z * orientation_w),sqw + sqx - sqy - sqz)) / 10.0;
-
-    return heading;
-
-#####################################################################
+    return t, R

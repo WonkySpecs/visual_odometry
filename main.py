@@ -42,7 +42,7 @@ cv2.namedWindow(output_track_windowname)
 
 output_traj = cv2.imread("sat_img.png", cv2.IMREAD_COLOR)
 #output_traj = cv2.resize(sat_img, None, fx = 0.5, fy = 0.5, interpolation = cv2.INTER_CUBIC)
-cv2.rectangle(output_traj, (3, 3), (430, 30), (0, 0, 0), -1)
+cv2.rectangle(output_traj, (3, 3), (430, 90), (0, 0, 0), -1)
 X_START = x = ground_x = 420
 Y_START = y = ground_y = 818
 
@@ -64,6 +64,8 @@ for frame_id, filename in enumerate(os.listdir(os.path.join(dataset_path, image_
 			if not vo:
 				roll, pitch, heading = gyro_to_angles(cur_imu_data[1], cur_imu_data[2], cur_imu_data[3], cur_imu_data[4])
 				initial_R = angles_to_R(roll, pitch, heading)
+				total_imu_t = np.zeros((3, 1))
+				
 				vo = VisualOdometry(first_frame, second_frame, initial_R)
 
 			# if prev_gps_data:
@@ -71,35 +73,45 @@ for frame_id, filename in enumerate(os.listdir(os.path.join(dataset_path, image_
 			# 	gps_dist *= 0.8
 				
 			roll, pitch, heading = gyro_to_angles(cur_imu_data[1], cur_imu_data[2], cur_imu_data[3], cur_imu_data[4])
-			R = angles_to_R(roll, pitch, heading)
-			#heading = math.radians(heading)
-				
-			# 	ground_x += gps_dist * math.sin(heading)
-			# 	ground_y += gps_dist * math.cos(heading)
+
+			imu_t, imu_R = IMU_matrices(imu_data[frame_id - 1], cur_imu_data)
+
+			total_imu_t = total_imu_t + (np.matmul(imu_R, imu_t))
+
 			vo.update(cur_frame)
 
 			tt = vo.total_t
-			tt2 = vo.total_t2
+			tt2 = vo.noskips_total_t
+
+			#print(tt.shape)
+			#print(tt2.shape)
+			#print(total_imu_t.shape)
 
 			#print(tt)
 
 			x = tt[0] + X_START
 			y = tt[1] + Y_START
 
-			#print(x, y)
-			#print(gps_data[frame_id][1], gps_data[frame_id][2])
-
 			x2 = tt2[0] + X_START
 			y2 = tt2[1] + Y_START
 
-			cv2.rectangle(output_traj, (x - 1, y - 1), (x + 1, y + 1), (0, 0, 255), -1)
-			cv2.rectangle(output_traj, (x2 - 1, y2 - 1), (x2 + 1, y2 + 1), (0, 255, 0), -1)
+			imu_x = total_imu_t[0] + X_START
+			imu_y = total_imu_t[1] + Y_START
+
+			cv2.rectangle(output_traj, (x - 1, y - 1), (x + 1, y + 1), (0, 0, 180), -1)
+			cv2.rectangle(output_traj, (x2 - 1, y2 - 1), (x2 + 1, y2 + 1), (0, 180, 0), -1)
+			cv2.rectangle(output_traj, (imu_x - 1, imu_y - 1), (imu_x + 1, imu_y + 1), (180, 0, 0), -1)
 
 			#cv2.rectangle(output_traj, (int(ground_x) - 1, int(ground_y) - 1), (int(ground_x) + 1, int(ground_y) + 1), (0, 255, 0), -1)
 
 			cv2.imshow(input_image_windowname, cur_frame)
 			final_out = output_traj.copy()
 			cv2.putText(final_out, "x:{: 8.3f}    y:{: 8.3f}    z:{: 8.3f}".format(tt[0][0], tt[1][0], tt[2][0]), (10, 22), cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 255), 2)
+			cv2.putText(final_out, "x:{: 8.3f}    y:{: 8.3f}    z:{: 8.3f}".format(tt2[0][0], tt2[1][0], tt2[2][0]), (10, 52), cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 255), 2)
+			cv2.putText(final_out, "x:{: 8.3f}    y:{: 8.3f}    z:{: 8.3f}".format(total_imu_t[0][0], tt[1][0], total_imu_t[2][0]), (10, 82), cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 255), 2)
+			cv2.rectangle(final_out, (x - 1, y - 1), (x + 1, y + 1), (20, 20, 255), -1)
+			cv2.rectangle(final_out, (x2 - 1, y2 - 1), (x2 + 1, y2 + 1), (20, 255, 20), -1)
+			cv2.rectangle(final_out, (imu_x - 1, imu_y - 1), (imu_x + 1, imu_y + 1), (255, 20, 20), -1)
 
 			
 			cv2.imshow(output_track_windowname, final_out)

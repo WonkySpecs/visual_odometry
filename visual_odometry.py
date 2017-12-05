@@ -4,7 +4,7 @@ import numpy as np
 
 from helper_functions import *
 
-HESSIAN_THRESH = 2000
+HESSIAN_THRESH = 2500
 
 class VisualOdometry:
 	def __init__(self, frame1, frame2, initial_R):
@@ -14,13 +14,12 @@ class VisualOdometry:
 		self.total_t = None
 		self.total_R = initial_R
 
-		self.total_t2 = None
-		self.total_R2 = None
+		self.noskips_total_t = None
+		self.noskips_total_R = None
 
 		self.cur_frame = frame1
 
 		self.cur_kp, self.cur_des = getFeatures(self.cur_frame, HESSIAN_THRESH)		
-
 
 		self.update(frame2)
 
@@ -39,7 +38,6 @@ class VisualOdometry:
 		e_mat, mask = cv2.findEssentialMat(pts1, pts2)
 		try:
 			inliers, R, t, mask = cv2.recoverPose(e_mat, pts1, pts2)
-			#print(t)
 
 		except:
 			print("recoverPose failed")
@@ -48,12 +46,12 @@ class VisualOdometry:
 
 		if self.total_t == None:
 			self.total_t = t
-			self.total_t2 = self.total_t
-			self.total_R2 = self.total_R
+			self.noskips_total_t = self.total_t
+			self.noskips_total_R = self.total_R
 		else:
 			self.count += 1
-			self.total_t2 = self.total_t2 + (np.matmul(self.total_R2, t))
-			self.total_R2 = np.matmul(R, self.total_R2)
+			self.noskips_total_t = self.noskips_total_t + (np.matmul(self.noskips_total_R, t))
+			self.noskips_total_R = np.matmul(R, self.noskips_total_R)
 
 			if (math.fabs(t[0]) > math.fabs(t[1]) and math.fabs(t[0]) > math.fabs(t[2])) and (inliers/len(good_matches) > 0.85):
 				self.total_t = self.total_t + (np.matmul(self.total_R, t))
