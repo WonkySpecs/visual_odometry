@@ -45,14 +45,32 @@ cv2.namedWindow(output_track_windowname)
 output_traj = cv2.imread("sat_img.png", cv2.IMREAD_COLOR)
 #output_traj = cv2.resize(sat_img, None, fx = 0.5, fy = 0.5, interpolation = cv2.INTER_CUBIC)
 cv2.rectangle(output_traj, (3, 3), (430, 80), (0, 0, 0), -1)
-X_START = x = 420
-Y_START = y = 818
 
 cur_gps_data = prev_gps_data = None
 vo = None
 cam = Camera(4.8)
 
+X_START = x = None
+Y_START = y = None
+
+skip_to = 1100
+if skip_to == 0:
+	X_START = x = 420
+	Y_START = y = 818
+elif skip_to == 720:
+	X_START = x = 354
+	Y_START = y = 420
+elif skip_to == 1100:
+	X_START = x = 200
+	Y_START = y = 135
+else:
+	X_START = x = 400
+	Y_START = y = 400
+
 for frame_id, filename in enumerate(os.listdir(os.path.join(dataset_path, image_path))):
+	if skip_to > frame_id:
+		continue
+
 	if filename.endswith(".png"):
 		full_file_path = os.path.join(dataset_path, image_path, filename)
 		cur_frame = cv2.imread(full_file_path, cv2.IMREAD_COLOR)
@@ -60,9 +78,9 @@ for frame_id, filename in enumerate(os.listdir(os.path.join(dataset_path, image_
 		cur_gps_data = gps_data[frame_id]
 		cur_imu_data = imu_data[frame_id]
 
-		if frame_id == 0:
+		if frame_id == skip_to:
 			first_frame = smoothed
-		elif frame_id == 1:
+		elif frame_id == skip_to + 1:
 			second_frame = smoothed
 		else:
 			roll, pitch, heading = gyro_to_angles(cur_imu_data[1], cur_imu_data[2], cur_imu_data[3], cur_imu_data[4])

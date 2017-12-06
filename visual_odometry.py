@@ -6,8 +6,8 @@ from helper_functions import *
 from gyro import *
 
 HESSIAN_THRESH = 2500
-MAX_FEATURES = 300
-MIN_FEATURES = 120
+MAX_FEATURES = 2000
+MIN_FEATURES = 500
 
 #We cut off images below this point, as this contains only the bonnet of the car.
 #Reflections in the bonnet can cause problems with feature tracking
@@ -40,7 +40,7 @@ class VisualOdometry:
 
 		self.cur_frame = frame1[:IMAGE_Y_CUT, :]
 		
-		self.cur_kp = cv2.goodFeaturesToTrack(cv2.cvtColor(self.cur_frame, cv2.COLOR_BGR2GRAY), mask = None, **feature_params)
+		self.cur_kp = self.detect_points(self.cur_frame)
 
 		self.update(frame2, None)
 
@@ -50,9 +50,10 @@ class VisualOdometry:
 		self.cur_frame = new_frame[:IMAGE_Y_CUT, :]
 
 		if len(self.prev_kp) < MIN_FEATURES:
-			self.prev_kp = cv2.goodFeaturesToTrack(cv2.cvtColor(self.prev_frame, cv2.COLOR_BGR2GRAY), mask = None, **feature_params)
+			self.prev_kp = self.detect_points(self.prev_frame)
 
-		kp, st, err = cv2.calcOpticalFlowPyrLK(self.prev_frame, self.cur_frame, self.prev_kp, None)#, **lk_params)
+
+		kp, st, err = cv2.calcOpticalFlowPyrLK(self.prev_frame, self.cur_frame, self.prev_kp, None)
 		st = st.reshape(st.shape[0])
 		self.cur_kp = kp[st == 1]
 		self.prev_kp = self.prev_kp[st == 1]
@@ -87,4 +88,11 @@ class VisualOdometry:
 			else:
 				self.frame_skip_count += 1
 
-			
+	def detect_points(self, img):
+		fast = cv2.FastFeatureDetector_create(25)
+		pts =  fast.detect(img, None)
+		ptarray = np.array([np.array([feature.pt[0], feature.pt[1]]) for feature in pts], np.float32)
+		ptarray = ptarray.reshape((len(ptarray), 1, 2))
+		#goodfeats = cv2.goodFeaturesToTrack(cv2.cvtColor(self.cur_frame, cv2.COLOR_BGR2GRAY), mask = None, **feature_params)
+		
+		return ptarray
