@@ -13,17 +13,6 @@ import math
 
 from gyro import *
 
-# Takes an image and a Hessian threshold value and
-# returns the SURF features points (kp) and descriptors (des) of image
-# (for SURF features - Hessian threshold of typically 400-1000 can be used)
-
-def getFeatures(img, thres):
-    surf = cv2.xfeatures2d.SURF_create(thres)
-    kp, des = surf.detectAndCompute(img,None)
-    return kp, des
-
-#####################################################################
-
 # Performs FLANN-based feature matching of descriptor from 2 images
 # returns 'good matches' based on their distance
 # typically number_of_checks = 50, match_ratio = 0.7
@@ -41,12 +30,6 @@ def matchFeatures(des1, des2, number_of_checks, match_ratio):
             good_matches.append(m);
     return good_matches
 
-def computeEssentialMat(kp1, kp2, good_matches):
-    #compute the transformation
-    pts1 = np.float32([kp1[m.queryIdx].pt for m in good_matches]).reshape(-1,1,2);
-    pts2 = np.float32([kp2[m.trainIdx].pt for m in good_matches]).reshape(-1,1,2);
-    return cv2.findEssentialMat(pts1, pts2)
-
 def haversine_dist(lat1, long1, lat2, long2):
     lat1    = math.radians(lat1)
     long1   = math.radians(long1)
@@ -61,18 +44,8 @@ def haversine_dist(lat1, long1, lat2, long2):
 
     return 6371 * c * 1000
 
+#Convert from lon,lat to x, y coordinate spaceused in output trajectory
 def convert_gps_to_coords(lon, lat):
-    # 0: -1.570038 -> 420
-    #    54.767093 -> 818
-
-    # 720:
-    #     -1.571328 -> 354
-    #     54.772757 -> 420
-
-    # 1100:
-    #     -1.575188 -> 200
-    #     54.776528 -> 135
-
     return (440 * lon + 695.01) * 100, (-730 * lat + 39988.18) * 100
 
 def IMU_matrices(prev_imu, cur_imu):

@@ -112,11 +112,11 @@ def angles_to_R(roll, pitch, heading):
     s_a = math.sin(heading_r)
     c_a = math.cos(heading_r)
 
-    s_b = math.sin(roll_r)
-    c_b = math.cos(roll_r)
+    s_b = math.sin(pitch_r)
+    c_b = math.cos(pitch_r)
 
-    s_c = math.sin(pitch_r)
-    c_c = math.cos(pitch_r)
+    s_c = math.sin(roll_r)
+    c_c = math.cos(roll_r)
 
     R = np.array([  [c_a * c_b, (c_a * s_b * s_c) - (s_a * c_c), (c_a * s_b * c_c) + (s_a * s_c)],
                     [s_a * c_b, (s_a * s_b * s_c) + (c_a * c_c), (s_a * s_b * c_c) - (c_a * s_c)],

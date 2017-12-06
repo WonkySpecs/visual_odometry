@@ -93,16 +93,12 @@ for frame_id, filename in enumerate(os.listdir(os.path.join(dataset_path, image_
 
 			tt = vo.total_t
 			tt2 = vo.noskips_total_t
-			imu_tt = vo.imu_total_t
-
+			
 			x = tt[2] + X_START
-			y = tt[1] + Y_START
+			y = Y_START - tt[0]
 
 			x2 = tt2[2] + X_START
-			y2 = tt2[1] + Y_START
-
-			imu_x = imu_tt[2] + X_START
-			imu_y = imu_tt[1] + Y_START
+			y2 = Y_START - tt2[0]
 
 			gps_x, gps_y = convert_gps_to_coords(cur_gps_data[2], cur_gps_data[1])
 			gps_x = int(gps_x)
