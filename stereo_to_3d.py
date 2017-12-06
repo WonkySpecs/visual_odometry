@@ -175,19 +175,19 @@ if (os.path.isfile(full_path_filename_left) and os.path.isfile(full_path_filenam
     # using the on-line viewer at http://lidarview.com/
     # (by uploading, selecting X Y Z format, press render , rotating the view)
 
-    point_cloud_file = open('3d_points.txt', 'w');
-    csv_writer = csv.writer(point_cloud_file, delimiter=' ');
-    csv_writer.writerows(points);
-    point_cloud_file.close();
+    # point_cloud_file = open('3d_points.txt', 'w');
+    # csv_writer = csv.writer(point_cloud_file, delimiter=' ');
+    # csv_writer.writerows(points);
+    # point_cloud_file.close();
 
     # select a random subset of the 3D points (4 in total)
     # and them project back to the 2D image (as an example)
 
-    pts = project_3D_points_to_2D_image_points(random.sample(points, 4));
-    pts = np.array(pts, np.int32);
-    pts = pts.reshape((-1,1,2));
+    # pts = project_3D_points_to_2D_image_points(random.sample(points, 4));
+    # pts = np.array(pts, np.int32);
+    # pts = pts.reshape((-1,1,2));
 
-    cv2.polylines(imgL,[pts],True,(0,255,255), 3);
+    # cv2.polylines(imgL,[pts],True,(0,255,255), 3);
 
     cv2.imshow('left image',imgL)
     cv2.imshow('right image',imgR)
