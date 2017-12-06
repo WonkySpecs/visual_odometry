@@ -48,12 +48,12 @@ cv2.rectangle(output_traj, (3, 3), (430, 80), (0, 0, 0), -1)
 
 cur_gps_data = prev_gps_data = None
 vo = None
-cam = Camera(4.8)
+cam = Camera()
 
 X_START = x = None
 Y_START = y = None
 
-skip_to = 1100
+skip_to = 0
 if skip_to == 0:
 	X_START = x = 420
 	Y_START = y = 818
@@ -95,13 +95,13 @@ for frame_id, filename in enumerate(os.listdir(os.path.join(dataset_path, image_
 			tt2 = vo.noskips_total_t
 			imu_tt = vo.imu_total_t
 
-			x = tt[0] + X_START
+			x = tt[2] + X_START
 			y = tt[1] + Y_START
 
-			x2 = tt2[0] + X_START
+			x2 = tt2[2] + X_START
 			y2 = tt2[1] + Y_START
 
-			imu_x = imu_tt[0] + X_START
+			imu_x = imu_tt[2] + X_START
 			imu_y = imu_tt[1] + Y_START
 
 			cv2.rectangle(output_traj, (x - 1, y - 1), (x + 1, y + 1), (0, 0, 180), -1)
