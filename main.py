@@ -40,7 +40,7 @@ test_windowname = "Test"
 
 cv2.namedWindow(input_image_windowname, cv2.WINDOW_NORMAL)
 cv2.namedWindow(output_track_windowname)
-#cv2.namedWindow(test_windowname)
+cv2.namedWindow(test_windowname)
 
 output_traj = cv2.imread("sat_img.png", cv2.IMREAD_COLOR)
 #output_traj = cv2.resize(sat_img, None, fx = 0.5, fy = 0.5, interpolation = cv2.INTER_CUBIC)
@@ -74,7 +74,8 @@ for frame_id, filename in enumerate(os.listdir(os.path.join(dataset_path, image_
 	if filename.endswith(".png"):
 		full_file_path = os.path.join(dataset_path, image_path, filename)
 		cur_frame = cv2.imread(full_file_path, cv2.IMREAD_COLOR)
-		smoothed = cv2.GaussianBlur(cur_frame, (5, 5), 0)
+
+		smoothed = cv2.GaussianBlur(cur_frame, (3, 3), 0)
 		cur_gps_data = gps_data[frame_id]
 		cur_imu_data = imu_data[frame_id]
 
@@ -109,13 +110,13 @@ for frame_id, filename in enumerate(os.listdir(os.path.join(dataset_path, image_
 			cv2.rectangle(output_traj, (imu_x - 1, imu_y - 1), (imu_x + 1, imu_y + 1), (180, 0, 0), -1)
 			
 			final_out = output_traj.copy()
-			#cv2.putText(final_out, "x:{: 8.3f}    y:{: 8.3f}    z:{: 8.3f}".format(tt[0][0], tt[1][0], tt[2][0]), (10, 22), cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 255), 2)
-			#cv2.putText(final_out, "x:{: 8.3f}    y:{: 8.3f}    z:{: 8.3f}".format(tt2[0][0], tt2[1][0], tt2[2][0]), (10, 46), cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 255), 2)
-			#cv2.putText(final_out, "x:{: 8.3f}    y:{: 8.3f}    z:{: 8.3f}".format(imu_tt[0][0], tt[1][0], imu_tt[2][0]), (10, 70), cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 255), 2)
-			cv2.putText(final_out, "heading: {}".format(heading), (10, 40), cv2.FONT_HERSHEY_PLAIN, 2.0, (0, 0, 255), 2)
-			cv2.rectangle(final_out, (x - 1, y - 1), (x + 1, y + 1), (20, 20, 255), -1)
+			cv2.putText(final_out, "x:{: 8.3f}    y:{: 8.3f}    z:{: 8.3f}".format(tt[0][0], tt[1][0], tt[2][0]), (10, 22), cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 255), 2)
+			cv2.putText(final_out, "x:{: 8.3f}    y:{: 8.3f}    z:{: 8.3f}".format(tt2[0][0], tt2[1][0], tt2[2][0]), (10, 46), cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 255), 2)
+			cv2.putText(final_out, "x:{: 8.3f}    y:{: 8.3f}    z:{: 8.3f}".format(imu_tt[0][0], tt[1][0], imu_tt[2][0]), (10, 70), cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 255), 2)
+			# cv2.putText(final_out, "heading: {}".format(heading), (10, 40), cv2.FONT_HERSHEY_PLAIN, 2.0, (0, 0, 255), 2)
 			cv2.rectangle(final_out, (x2 - 1, y2 - 1), (x2 + 1, y2 + 1), (20, 255, 20), -1)
 			cv2.rectangle(final_out, (imu_x - 1, imu_y - 1), (imu_x + 1, imu_y + 1), (255, 20, 20), -1)
+			cv2.rectangle(final_out, (x - 1, y - 1), (x + 1, y + 1), (20, 20, 255), -1)
 
 			for pair in zip(vo.prev_kp, vo.cur_kp):
 				prev_pt = (pair[0][0, 0], pair[0][0, 1])
@@ -124,6 +125,7 @@ for frame_id, filename in enumerate(os.listdir(os.path.join(dataset_path, image_
 
 			cv2.imshow(input_image_windowname, cur_frame)
 			cv2.imshow(output_track_windowname, final_out)
+			cv2.imshow(test_windowname, vo.cur_frame)
 
 	key = cv2.waitKey(40) & 0xFF
 	if key == ord('q'):
