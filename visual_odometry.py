@@ -114,13 +114,15 @@ class VisualOdometry:
 		e_mat, mask = cv2.findEssentialMat(self.prev_kp, self.cur_kp, self.cam.intrinsic_mat)#, method = cv2.RANSAC, prob = 0.999)
 
 		inliers, R, t, mask = cv2.recoverPose(e_mat, self.prev_kp, self.cur_kp)
-		
+
 		#Band aid solution to recoverPose being dodgy
 		if t[2] < 0:
+			R1, R2, test = cv2.decomposeEssentialMat(e_mat)
+			print("wtf")
 			t = -t
 
 		if self.total_t == None:
-			self.total_t = t
+			self.total_t = self.total_R.dot(t)
 			self.noskips_total_t = self.total_t
 			self.noskips_total_R = self.total_R
 			self.imu_total_t = self.total_t
@@ -131,7 +133,7 @@ class VisualOdometry:
 			self.noskips_total_R = R.dot(self.noskips_total_R)
 
 			#Accept if moving forwards more than noise could produce, forwards is the dominant motion, and inliers is high enough
-			if t[2] > 0.2 and t[2] > math.fabs(t[1]) and t[2] > math.fabs(t[0]) and ((inliers/len(self.cur_kp)) > 0.75):
+			if t[2] > 0.4 and t[2] > math.fabs(t[1]) and t[2] > math.fabs(t[0]) and ((inliers/len(self.cur_kp)) > 0.6):
 				self.total_t = self.total_t + self.total_R.dot(t)
 				self.total_R = R.dot(self.total_R)
 

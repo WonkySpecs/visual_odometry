@@ -61,10 +61,19 @@ def haversine_dist(lat1, long1, lat2, long2):
 
     return 6371 * c * 1000
 
-def convert_gps_to_coords(gps_data):
-    lon, lat = gps_data[1], gps_data[2]
+def convert_gps_to_coords(lon, lat):
+    # 0: -1.570038 -> 420
+    #    54.767093 -> 818
 
-    return 5, 5
+    # 720:
+    #     -1.571328 -> 354
+    #     54.772757 -> 420
+
+    # 1100:
+    #     -1.575188 -> 200
+    #     54.776528 -> 135
+
+    return (440 * lon + 695.01) * 100, (-730 * lat + 39988.18) * 100
 
 def IMU_matrices(prev_imu, cur_imu):
     time_passed = cur_imu[0] - prev_imu[0]

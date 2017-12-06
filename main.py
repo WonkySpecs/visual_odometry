@@ -74,7 +74,6 @@ for frame_id, filename in enumerate(os.listdir(os.path.join(dataset_path, image_
 	if filename.endswith(".png"):
 		full_file_path = os.path.join(dataset_path, image_path, filename)
 		cur_frame = cv2.imread(full_file_path, cv2.IMREAD_COLOR)
-
 		smoothed = cv2.GaussianBlur(cur_frame, (3, 3), 0)
 		cur_gps_data = gps_data[frame_id]
 		cur_imu_data = imu_data[frame_id]
@@ -105,18 +104,22 @@ for frame_id, filename in enumerate(os.listdir(os.path.join(dataset_path, image_
 			imu_x = imu_tt[2] + X_START
 			imu_y = imu_tt[1] + Y_START
 
-			cv2.rectangle(output_traj, (x - 1, y - 1), (x + 1, y + 1), (0, 0, 180), -1)
-			cv2.rectangle(output_traj, (x2 - 1, y2 - 1), (x2 + 1, y2 + 1), (0, 180, 0), -1)
-			cv2.rectangle(output_traj, (imu_x - 1, imu_y - 1), (imu_x + 1, imu_y + 1), (180, 0, 0), -1)
+			gps_x, gps_y = convert_gps_to_coords(cur_gps_data[2], cur_gps_data[1])
+			gps_x = int(gps_x)
+			gps_y = int(gps_y)
+
+			cv2.rectangle(output_traj, (x - 1, y - 1), (x + 1, y + 1), (0, 0, 140), -1)
+			cv2.rectangle(output_traj, (x2 - 1, y2 - 1), (x2 + 1, y2 + 1), (0, 140, 0), -1)
+			cv2.rectangle(output_traj, (gps_x - 1, gps_y - 1), (gps_x + 1, gps_y + 1), (140, 0, 0), -1)
 			
 			final_out = output_traj.copy()
 			cv2.putText(final_out, "x:{: 8.3f}    y:{: 8.3f}    z:{: 8.3f}".format(tt[0][0], tt[1][0], tt[2][0]), (10, 22), cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 255), 2)
 			cv2.putText(final_out, "x:{: 8.3f}    y:{: 8.3f}    z:{: 8.3f}".format(tt2[0][0], tt2[1][0], tt2[2][0]), (10, 46), cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 255), 2)
-			cv2.putText(final_out, "x:{: 8.3f}    y:{: 8.3f}    z:{: 8.3f}".format(imu_tt[0][0], tt[1][0], imu_tt[2][0]), (10, 70), cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 255), 2)
+			cv2.putText(final_out, "x:{: 8.3f}    y:{: 8.3f}    z:{: 8.3f}".format(gps_x, gps_y, 0), (10, 70), cv2.FONT_HERSHEY_PLAIN, 1.25, (0, 0, 255), 2)
 			# cv2.putText(final_out, "heading: {}".format(heading), (10, 40), cv2.FONT_HERSHEY_PLAIN, 2.0, (0, 0, 255), 2)
-			cv2.rectangle(final_out, (x2 - 1, y2 - 1), (x2 + 1, y2 + 1), (20, 255, 20), -1)
-			cv2.rectangle(final_out, (imu_x - 1, imu_y - 1), (imu_x + 1, imu_y + 1), (255, 20, 20), -1)
-			cv2.rectangle(final_out, (x - 1, y - 1), (x + 1, y + 1), (20, 20, 255), -1)
+			cv2.rectangle(final_out, (x2 - 1, y2 - 1), (x2 + 1, y2 + 1), (30, 255, 30), -1)
+			cv2.rectangle(final_out, (gps_x - 1, gps_y - 1), (gps_x + 1, gps_y + 1), (255, 30, 30), -1)
+			cv2.rectangle(final_out, (x - 1, y - 1), (x + 1, y + 1), (30, 30, 255), -1)
 
 			for pair in zip(vo.prev_kp, vo.cur_kp):
 				prev_pt = (pair[0][0, 0], pair[0][0, 1])
