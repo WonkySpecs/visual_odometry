@@ -1,8 +1,4 @@
-import cv2
-import math
-import numpy as np
-import time
-
+from common_modules import *
 from helper_functions import *
 from gyro import *
 
@@ -29,10 +25,15 @@ class VisualOdometry:
 		self.cam = cam
 
 		self.total_t = None
-		self.total_R = np.eye(3, 3)
+		self.total_R = initial_R#np.eye(3, 3)
 
 		self.noskips_total_t = None
 		self.noskips_total_R = None
+		self.imu_total_t = None
+		self.imu_total_R = None
+
+		self.cur_cloud = None
+		self.prev_cloud = None
 
 		self.cur_frame = frame1[:IMAGE_Y_CUT, :]
 		
@@ -49,10 +50,11 @@ class VisualOdometry:
 		#Remove part of image that contains car bonnet
 		self.cur_frame = new_frame[:IMAGE_Y_CUT, :]
 
-		#This updates self.prev_kp and self.cur_kp to be matched arrays of features which can be used to calculate the essential matrix
+		#This updates self.prev_kp and self.cur_kp to be matched arrays of good features
 		self.update_features()
 		
-		self.calc_total_t_and_R()
+		#Use the matched features to find the essential matrix, decompose to R and t, and compose with total R and t
+		self.calc_total_t_and_R(angles)
 
 	def update_features(self):
 		if len(self.prev_kp) < MIN_FEATURES:
@@ -110,33 +112,79 @@ class VisualOdometry:
 		dists = abs(self.cur_kp - self.prev_kp).reshape(-1, 2).max(-1)
 		return np.median(dists)
 
-	def calc_total_t_and_R(self):
-		#Taken from findHomography() function in mosaic_support, acknowledgements in helper_functions.py
-		e_mat, mask = cv2.findEssentialMat(self.prev_kp, self.cur_kp, self.cam.intrinsic_mat)#, method = cv2.RANSAC, prob = 0.999)
+	def triangulate_points(self, R, t):
+		"""Triangulates the feature correspondence points with
+        the camera intrinsic matrix, rotation matrix, and translation vector.
+        It creates projection matrices for the triangulation process."""
+
+		# The canonical matrix (set as the origin)
+		P0 = np.array([[1, 0, 0, 0],
+		               [0, 1, 0, 0],
+		               [0, 0, 1, 0]])
+		P0 = self.cam.intrinsic_mat.dot(P0)
+		# Rotated and translated using P0 as the reference point
+		P1 = np.hstack((R, t))
+		P1 = self.cam.intrinsic_mat.dot(P1)
+		# Reshaped the point correspondence arrays to cv2.triangulatePoints's format
+		point1 = self.prev_kp.reshape(2, -1)
+		point2 = self.cur_kp.reshape(2, -1)
+
+		return cv2.triangulatePoints(P0, P1, point1, point2).reshape(-1, 4)[:, :3]
+
+	def calc_scale(self, R, t):
+		if self.cur_cloud is not None:
+			self.prev_cloud = self.cur_cloud
+			self.cur_cloud = self.triangulate_points(R, t)
+
+			scale = 1.0
+
+			min_idx = min([self.cur_cloud.shape[0], self.prev_cloud.shape[0]])
+			ratios = []  # List to obtain all the ratios of the distances
+			for i in range(1, min_idx):
+				Xk = self.cur_cloud[i]
+				p_Xk = self.cur_cloud[i - 1]
+				Xk_1 = self.prev_cloud[i]
+				p_Xk_1 = self.prev_cloud[i - 1]
+
+				if np.linalg.norm(p_Xk - Xk) != 0:
+				    ratios.append(np.linalg.norm(p_Xk_1 - Xk_1) / np.linalg.norm(p_Xk - Xk))
+			return np.median(ratios)
+		else:
+			self.cur_cloud = self.triangulate_points(R, t)
+			return 1.0
+
+	def calc_total_t_and_R(self, angles):
+		e_mat, mask = cv2.findEssentialMat(self.prev_kp, self.cur_kp, self.cam.intrinsic_mat, method = cv2.RANSAC, prob = 0.999)
 
 		inliers, R, t, mask = cv2.recoverPose(e_mat, self.prev_kp, self.cur_kp, self.cam.intrinsic_mat)
 
-		#Band aid solution to recoverPose being dodgy
-		
+		#The value for t returned is normalised, as it is impossible to calculate scale from the essential matrix
+		#Using the approach taken from https://github.com/Transportation-Inspection/visual_odometry,
+		#we triangulate cur_kp and prev_kp in 3d space to calculate the scale of the translation
+		scale = self.calc_scale(R, t)
+
+		#The t given by recoverPose is (almost) always the opposite of what we want
 		if t[2] < 0:
-			#print(R1)
-			#print(R2)
-			#print("help")
 			t = -t
 
-		if self.total_t == None:
+		if self.total_t is None:
 			self.total_t = self.total_R.dot(t)
 			self.noskips_total_t = self.total_t
 			self.noskips_total_R = self.total_R
+			self.imu_total_t = self.total_t
+			self.imu_total_R = self.total_R
 		else:
 			self.count += 1
-			self.noskips_total_t = self.noskips_total_t + self.noskips_total_R.dot(t)
+			self.noskips_total_t = self.noskips_total_t + scale * self.noskips_total_R.dot(t)
 			self.noskips_total_R = R.dot(self.noskips_total_R)
 
-			#Accept if moving almost entirely forwards, forwards is the dominant motion, and inlier percentage is high enough
-			if t[2] > 0.8 and t[2] > math.fabs(t[1]) and t[2] > math.fabs(t[0]) and ((inliers/len(self.cur_kp)) > 0.8) and self.average_feature_change > 2.5:
-				self.total_t = self.total_t + self.total_R.dot(t)
+			#Accept if forwards is the dominant motion, and features have moved 'far enough' (otherwise the car is not moving)
+			if (t[2] > math.fabs(t[1]) and t[2] > math.fabs(t[0]) and self.average_feature_change > 2):
+				self.total_t = self.total_t + scale * self.total_R.dot(t)
 				self.total_R = R.dot(self.total_R)
+
+				self.imu_total_t = self.imu_total_t + scale * self.imu_total_R.dot(t)
+				self.imu_total_R = angles_to_R(angles[0], angles[1], angles[2])
 			else:
 				self.frame_skip_count += 1
 				#print(self.frame_skip_count)
