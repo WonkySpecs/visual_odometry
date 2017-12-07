@@ -55,6 +55,9 @@
 #*
 #*********************************************************************/
 
+#This file has been extended fromt he originally provided gyro.py to
+#include a method to convert angles into a rotation matrix.
+
 from common_modules import *
 
 #####################################################################
@@ -124,5 +127,4 @@ def angles_to_R(roll, pitch, heading):
 
 def heading_to_R(heading):
     h_r = math.radians(heading)
-    #return np.array([[math.cos(h_r), 0, math.sin(h_r)], [0, 1, 0], [-math.sin(h_r), 0, math.cos(h_r)]])
     return np.array([[math.cos(h_r), -math.sin(h_r), 0], [math.sin(h_r), math.cos(h_r), 0], [0, 0, 1]])
